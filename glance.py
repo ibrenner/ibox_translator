@@ -72,11 +72,11 @@ class ImagesList(Resource):
                 except Exception as E:
                     print(E.message)
                     exit(1)
-		if outp.status_code == 200:
+                if outp.status_code == 200:
 	                for image in outp.json()['images']:
         	            image_list.append(format_image(image))
-		else:
-			return outp.reason, outp.status_code
+                else:
+                    return outp.reason, outp.status_code
             if 'name' in request.args:
                 imagelist = [image for image in image_list if request.args['name'] in image['name']]
                 if imagelist:
@@ -106,12 +106,12 @@ class Image(Resource):
         url="http://{}:{}/v2/images/{}".format(openstack, glanceport, reqid)
         headers = {'X-Auth-Token': reqargs['ServiceKey']}
         outp = requests.get(url=url,headers=headers)
-	if outp.status_code == 200:
+        if outp.status_code == 200:
 	        fimage=format_image(outp.json())
         	image_dict = {"image":fimage}
 	        return image_dict, 200
-	else:
-		return outp.reason, outp.status_code
+        else:
+            return outp.reason, outp.status_code
     
 
 #api.add_resource(ImagesList, "/api/v1/images")
