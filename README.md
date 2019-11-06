@@ -15,10 +15,10 @@ with some operations, it is also configured to send back a notification of the r
 code is written in python, using infinisdk and flask modules.
 
 Supported API includes:
-Volume
-Snapshots
-Snapshot Scheduler
-Glance
+- Volume
+- Snapshots
+- Snapshot Scheduler
+- Glance
 
 
 for full listing of API request and response please refer to API-Translator DRAFT_GENERAL under the documenation directory
