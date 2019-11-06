@@ -67,14 +67,14 @@ class ScheduleList(Resource):
         super(ScheduleList, self).__init__()
     def get(self, vol_id):
         job=scheduler.get_job(vol_id)
-	if job:
-	        fjob = {"schedule":format_sched(job)}
-	        return fjob, 200
-	else:
-		return Response(status = 404)
+        if job:
+            fjob = {"schedule":format_sched(job)}
+            return fjob, 200
+        else:
+            return Response(status = 404)
     def post(self, vol_id):
         data=request.get_json()
-	top = reqparse.RequestParser()
+        top = reqparse.RequestParser()
         top.add_argument('schedule', type=dict)
         top_args = top.parse_args()
         bot = reqparse.RequestParser()
@@ -125,7 +125,7 @@ class Schedule(Resource):
         super(Schedule, self).__init__()
     def put(self, vol_id, schedule_id):
         data=request.get_json()
-	top = reqparse.RequestParser()
+        top = reqparse.RequestParser()
         top.add_argument('schedule', type=dict)
         top_args = top.parse_args()
         bot = reqparse.RequestParser()
@@ -180,10 +180,3 @@ class Schedule(Resource):
         
         
 
-
-#api.add_resource(ScheduleList, "/api/v1/volumes/<vol_id>/snapshots/schedule")
-#api.add_resource(Schedule, "/api/v1/volumes/<vol_id>/snapshots/schedule/<schedule_id>")
-#
-#if __name__ == '__main__':
-#    app.run(debug=True, port=8080)
-    

@@ -44,9 +44,9 @@ def format_snap(data, meta, status='available'):
         todict["status"]='In Use'
     if 'status' in data.get_all_metadata():
         todict['status']=data.get_all_metadata()['status']
-    if meta.has_key('desc'):
+    if 'desc' in meta:
         todict['desc']=meta['desc']
-    if meta.has_key('name'):
+    if 'name' in meta:
         todict['name']=meta['name']
     return todict
 
@@ -79,10 +79,10 @@ class SnapsList(Resource):
         super(SnapsList, self).__init__()
     def get(self, vol_id):
         ibox, volume_id = get_params(vol_id)
-	try:
+        try:
 	        s1=(ibox.volumes.get_by_id(volume_id)).get_children()
-	except Exception:
-		return {}, 404
+        except Exception:
+            return {}, 404
         snap_list=[]
         for item in s1:
             meta=item.get_all_metadata()
@@ -90,7 +90,7 @@ class SnapsList(Resource):
         snap_dict = {"snapshots":snap_list}
         return snap_dict, 200
     def post(self, vol_id):
-	top = reqparse.RequestParser()
+        top = reqparse.RequestParser()
         top.add_argument('snapshot', type=dict)
         top_args = top.parse_args()
         bot = reqparse.RequestParser()
@@ -98,15 +98,15 @@ class SnapsList(Resource):
         bot.add_argument('desc', type=str, location=('snapshot',), required=True)
         bot_parse = bot.parse_args(req=top_args)       
         ibox, volume_id = get_params(vol_id)
-	try:
-	        v1=(ibox.volumes.get_by_id(volume_id)).create_snapshot(name=generate_random_name(name_len))
-	except Exception:
-		return {}, 404
+        try:
+                v1=(ibox.volumes.get_by_id(volume_id)).create_snapshot(name=generate_random_name(name_len))
+        except Exception:
+            return {}, 404
         if v1:
             v1.set_metadata('desc', bot_parse['desc'])
             v1.set_metadata('name', bot_parse['name'])
             outm=v1.get_all_metadata()
-	    snap_dict = format_snap(v1, outm, status='creating')
+            snap_dict = format_snap(v1, outm, status='creating')
             s_dict={"snapshot":snap_dict}
         else:
             return {},404
@@ -114,7 +114,7 @@ class SnapsList(Resource):
         thread_a = NotifyRM(notifydict)
         thread_a.start()
         return s_dict, 201
-    
+        
 
 class SnapDel(Resource):
     def __init__(self):
@@ -125,10 +125,10 @@ class SnapDel(Resource):
         super(SnapDel, self).__init__()
     def delete(self,vol_id, snap_id):
         ibox, volume_id = get_params(snap_id)
-	try:
+        try:
 	        (ibox.volumes.get_by_id(volume_id)).delete()
-	except Exception:
-		return {}, 404
+        except Exception:
+            return {}, 404
         return Response(status = 200)
 
 
@@ -142,12 +142,12 @@ class SnapRestore(Resource):
     def post(self,vol_id, snap_id):
         ibox, volume_id = get_params(vol_id)
         ibox, snapshot_id = get_params(snap_id)
-	try:
+        try:
 	        vol=ibox.volumes.get_by_id(volume_id)
 	        snap=ibox.volumes.get_by_id(snapshot_id)
 	        vol.restore(snap)
-	except Exception:
-		return {}, 404
+        except Exception:
+            return {}, 404
         notifydict = {'volume_id':vol_id, 'id':snap_id, 'status':'activated', 'notify_type':'snapshot_revert'}
         thread_b = NotifyRM(notifydict)
         thread_b.start()
@@ -166,25 +166,24 @@ class SnapAttach(Resource):
         for snap in body['snapshot']['snapshots']:
             ibox, volume_id = get_params(snap['volume_id'])
             ibox, snapshot_id = get_params(snap['snapshot_id'])
-	    snapid=ibox.volumes.get_by_id(snapshot_id)
+            snapid=ibox.volumes.get_by_id(snapshot_id)
 	    #host=ibox.hosts.get_host_by_initiator_address(body['snapshot']['iscsi_init'])
-	    host=get_host(ibox,body['snapshot']['iscsi_init'])
+            host=get_host(ibox,body['snapshot']['iscsi_init'])
             if host and snapid:
                 if body['snapshot']['action'].upper() == 'ATTACH':
                     try:
-			#host.map_volume(snapid, lun=snap['order'])
-			host.map_volume(snapid)
-			snapid.set_metadata('status', 'in-use')   
-	                outp=format_mapping(body, snap)
-		    except Exception:
-			outp=format_mapping(body, snap, status='failed')
+                        host.map_volume(snapid)
+                        snapid.set_metadata('status', 'in-use')   
+                        outp=format_mapping(body, snap)
+                    except Exception:
+                        outp=format_mapping(body, snap, status='failed')
                 elif body['snapshot']['action'].upper() == 'DETACH':
                     try:
-			host.unmap_volume(snapid)
-			snapid.set_metadata('status', 'available')   
-	                outp=format_mapping(body, snap)
-		    except Exception:
-			outp=format_mapping(body, snap, status='failed')
+                        host.unmap_volume(snapid)
+                        snapid.set_metadata('status', 'available')   
+                        outp=format_mapping(body, snap)
+                    except Exception:
+                        outp=format_mapping(body, snap, status='failed')
             else:
                 return {}, 404
         return outp, 200
