@@ -151,21 +151,23 @@ class VolumesList(Resource):
         body=request.json
         for mandatory_key in mandatory_pars:
             if mandatory_key not in body['volumes']: ##1
-                print("mandatory_key {} can't be found").format(mandatory_key)
-                raise InvalidUsage('Mandatory key cannot be found', status_code=410)
+                #print("mandatory_key {} can't be found").format(mandatory_key)
+                return Response(status = 404)
         system=get_box_by_par(par="name",req="ibox",val=body['volumes']['zone_code'],zones=zones)
         pool=system.pools.to_list()[0]
         if not system:
             return Response(status = 404)
         new_name=generate_random_name(vol_name_length)
         volume=system.volumes.create(pool=pool,size=body['volumes']['size']*GB,name=new_name)
-        if body['volumes']['iscsi_init']:
-            host=get_host(system, body['volumes']['iscsi_init'])
-            host.map_volume(volume)
-            volume.set_metadata('status', 'in-use')	
+        volume.set_metadata('status','available')
+        if not body['volumes']['iscsi_init']:
+            return Response(status = 400)
+            # host=get_host(system, body['volumes']['iscsi_init'])
+            # host.map_volume(volume)
+            # volume.set_metadata('status', 'in-use')	
+        # else:
         volume.set_metadata('name',body['volumes']['name'])
         volume.set_metadata('iscsi_init',body['volumes']['iscsi_init'])
-        volume.set_metadata('status','available')
         new_id=encode_vol_by_id(val=system,id=volume.get_id(),type='ibox',zones=zones)
         volume.set_metadata('id',new_id)
         for optional_key in opts_pars:
@@ -177,10 +179,10 @@ class VolumesList(Resource):
         # vol_infi_data=requests.get(url=url,auth=creds)
         global iscsi_init
         # global volume_type
-        if 'iscsi_init' in body['volumes'].keys():
-            iscsi_init=body['volumes']['iscsi_init']
-        else:
-            iscsi_init=''
+        # if 'iscsi_init' in body['volumes'].keys():
+        #     iscsi_init=body['volumes']['iscsi_init']
+        # else:
+        #     iscsi_init=''
         vol_data=get_vol_data(volume)
         notify_vol={}
         notify_vol={'volume_id':new_id, 'id':"", 'status':'available', 'notify_type':'volume_create'}
@@ -224,9 +226,13 @@ class Volume(Resource):
         try:
             volume=system.volumes.find(id=int(vol))
             if volume:
-                if volume[0].is_mapped():
-                    volume[0].unmap()
-                    volume[0].delete()
+                volmeta=volume[0].get_all_metadata()
+                if volmeta['status'] == 'available':
+                    if volume[0].is_mapped():
+                        volume[0].unmap()
+                        volume[0].delete()
+                else:
+                    return 'volume in-use', 404
                 #vol_data=get_vol_data(volume[0])
 #                volume[0].delete()
             else: 
@@ -257,7 +263,8 @@ class VolumesAttachment(Resource):
             if not vol:
                 pass
             if body['volume']['action'].upper() == "ATTACH":
-                try: 			
+                try:
+                    vol[0].set_metadata('status', 'in-use') 			
                     host.map_volume(vol[0])
                 except Exception as E:
                     print("Execption {}").format(E)
